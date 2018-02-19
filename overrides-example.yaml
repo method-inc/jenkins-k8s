@@ -1,0 +1,14 @@
+jenkins:
+  Master:
+    # For minikube, set this to NodePort, elsewhere use LoadBalancer
+    # Use ClusterIP if your setup includes ingress controller
+    ServiceType: NodePort
+
+    # Disable security (less hassle for local development)
+    UseSecurity: false
+
+  Agent:
+    Enabled: false
+
+  Persistence:
+    Enabled: false
