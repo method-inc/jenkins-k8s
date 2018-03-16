@@ -65,11 +65,11 @@ jenkins:
     # JMXPort: 4000
     # List of plugins to be install during Jenkins master start
     InstallPlugins:
-      - kubernetes:1.2.1
+      - kubernetes:1.3.2
       - workflow-aggregator:2.5
       - workflow-job:2.17
       - credentials-binding:1.15
-      - git:3.7.0
+      - git:3.8.0
       - blueocean:1.4.2
       - github-oauth:0.29
     # Used to approve a list of groovy functions in pipelines used the script-security plugin. Can be viewed under /scriptApproval
@@ -78,8 +78,34 @@ jenkins:
     #   - "new groovy.json.JsonSlurperClassic"
     # List of groovy init scripts to be executed during Jenkins master start
     InitScripts:
-    #  - |
-    #    print 'adding global pipeline libraries, register properties, bootstrap jobs...'
+    - |
+      print 'adding global pipeline libraries, register properties, bootstrap jobs...'
+    - |
+      import org.jenkinsci.plugins.workflow.libs.*
+      import jenkins.plugins.git.GitSCMSource
+
+      GlobalLibraries descriptor = (GlobalLibraries) GlobalLibraries.get()
+
+      GitSCMSource scmSource = new GitSCMSource(
+        '463a8f67-5a28-430e-b4ea-a18fc5b1a40d',
+        'https://github.com/jlegrone/jenkins-utilities',
+        'credentialsId',
+        'origin',
+        '+refs/heads/*:refs/remotes/origin/*',
+        '*',
+        '',
+        false
+      )
+
+      SCMSourceRetriever retriever = new SCMSourceRetriever(scmSource)
+
+      LibraryConfiguration libraryConfiguration = new LibraryConfiguration('utilities', retriever)
+      libraryConfiguration.setDefaultVersion('master')
+      libraryConfiguration.setImplicit(false)
+      libraryConfiguration.setAllowVersionOverride(true)
+
+      descriptor.getLibraries().add(libraryConfiguration)
+      descriptor.save()
     # Kubernetes secret that contains a 'credentials.xml' for Jenkins
     # CredentialsXmlSecret: jenkins-credentials
     # Kubernetes secret that contains files to be put in the Jenkins 'secrets' directory,
