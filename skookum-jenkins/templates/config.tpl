@@ -58,6 +58,7 @@ data:
       <clouds>
         <org.csanchez.jenkins.plugins.kubernetes.KubernetesCloud plugin="kubernetes@{{ template "jenkins.kubernetes-version" . }}">
           <name>kubernetes</name>
+          <defaultsProviderTemplate>default</defaultsProviderTemplate>
           <templates>
 {{- if .Values.Agent.Enabled }}
             <org.csanchez.jenkins.plugins.kubernetes.PodTemplate>
@@ -65,7 +66,7 @@ data:
               <name>default</name>
               <instanceCap>2147483647</instanceCap>
               <idleMinutes>0</idleMinutes>
-              <label>{{ .Release.Name }}-{{ .Values.Agent.Component }}</label>
+              <label>{{ default "default" .Values.Agent.AgentLabel }}</label>
               <nodeSelector>
                 {{- $local := dict "first" true }}
                 {{- range $key, $value := .Values.Agent.NodeSelector }}
