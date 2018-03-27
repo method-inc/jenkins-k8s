@@ -10,6 +10,11 @@ This repository contains a [helm](https://docs.helm.sh) chart to deploy a Jenkin
 ## Installation
 
 ```bash
+kubectl create clusterrolebinding add-on-cluster-admin --clusterrole=cluster-admin --serviceaccount=kube-system:default
+helm init
+```
+
+```bash
 helm dependency build skookum-jenkins
 helm install skookum-jenkins
 ```

@@ -27,7 +27,7 @@ data:
           </adminUserNameList>
           <authenticatedUserReadPermission>true</authenticatedUserReadPermission>
           <useRepositoryPermissions>true</useRepositoryPermissions>
-          <authenticatedUserCreateJobPermission>false</authenticatedUserCreateJobPermission>
+          <authenticatedUserCreateJobPermission>true</authenticatedUserCreateJobPermission>
           <allowGithubWebHookPermission>false</allowGithubWebHookPermission>
           <allowCcTrayPermission>false</allowCcTrayPermission>
           <allowAnonymousReadPermission>false</allowAnonymousReadPermission>
