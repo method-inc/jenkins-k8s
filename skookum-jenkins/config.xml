@@ -100,7 +100,7 @@
           <imagePullSecrets/>
         </org.csanchez.jenkins.plugins.kubernetes.PodTemplate>
       </templates>
-      <serverUrl>https://kubernetes.default</serverUrl>
+      <serverUrl>https://kubernetes.default.svc</serverUrl>
       <skipTlsVerify>false</skipTlsVerify>
       <namespace>default</namespace>
       <jenkinsUrl>http://jenkins-jenkins:8080</jenkinsUrl>
