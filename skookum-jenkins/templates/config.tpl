@@ -63,7 +63,7 @@ data:
 {{- if .Values.Agent.Enabled }}
             <org.csanchez.jenkins.plugins.kubernetes.PodTemplate>
               <inheritFrom></inheritFrom>
-              <name>default</name>
+              <name>jenkins-agent-default</name>
               <instanceCap>2147483647</instanceCap>
               <idleMinutes>0</idleMinutes>
               <label>{{ default "default" .Values.Agent.AgentLabel }}</label>
@@ -98,10 +98,13 @@ data:
                   <command></command>
                   <args>${computer.jnlpmac} ${computer.name}</args>
                   <ttyEnabled>false</ttyEnabled>
-                  <resourceRequestCpu>{{.Values.Agent.Cpu}}</resourceRequestCpu>
-                  <resourceRequestMemory>{{.Values.Agent.Memory}}</resourceRequestMemory>
-                  <resourceLimitCpu>{{.Values.Agent.Cpu}}</resourceLimitCpu>
-                  <resourceLimitMemory>{{.Values.Agent.Memory}}</resourceLimitMemory>
+                  # Resources configuration is a little hacky. This was to prevent breaking
+                  # changes, and should be cleanned up in the future once everybody had
+                  # enough time to migrate.
+                  <resourceRequestCpu>{{.Values.Agent.Cpu | default .Values.Agent.resources.requests.cpu}}</resourceRequestCpu>
+                  <resourceRequestMemory>{{.Values.Agent.Memory | default .Values.Agent.resources.requests.memory}}</resourceRequestMemory>
+                  <resourceLimitCpu>{{.Values.Agent.Cpu | default .Values.Agent.resources.limits.cpu}}</resourceLimitCpu>
+                  <resourceLimitMemory>{{.Values.Agent.Memory | default .Values.Agent.resources.limits.memory}}</resourceLimitMemory>
                   <envVars>
                     <org.csanchez.jenkins.plugins.kubernetes.ContainerEnvVar>
                       <key>JENKINS_URL</key>
@@ -149,7 +152,19 @@ data:
       </views>
       <primaryView>All</primaryView>
       <slaveAgentPort>50000</slaveAgentPort>
+      <disabledAgentProtocols>
+{{- range .Values.Master.DisabledAgentProtocols }}
+        <string>{{ . }}</string>
+{{- end }}
+      </disabledAgentProtocols>
       <label></label>
+{{- if .Values.Master.CSRF.DefaultCrumbIssuer.Enabled }}
+      <crumbIssuer class="hudson.security.csrf.DefaultCrumbIssuer">
+{{- if .Values.Master.CSRF.DefaultCrumbIssuer.ProxyCompatability }}
+        <excludeClientIPFromCrumb>true</excludeClientIPFromCrumb>
+{{- end }}
+      </crumbIssuer>
+{{- end }}
       <nodeProperties/>
       <globalNodeProperties/>
       <noUsageStatistics>true</noUsageStatistics>
@@ -171,14 +186,27 @@ data:
       <pendingClasspathEntries/>
     </scriptApproval>
 {{- end }}
+  jenkins.CLI.xml: |-
+    <?xml version='1.1' encoding='UTF-8'?>
+    <jenkins.CLI>
+{{- if .Values.Master.CLI }}
+      <enabled>true</enabled>
+{{- else }}
+      <enabled>false</enabled>
+{{- end }}
+    </jenkins.CLI>
   apply_config.sh: |-
     mkdir -p /usr/share/jenkins/ref/secrets/;
     echo "false" > /usr/share/jenkins/ref/secrets/slave-to-master-security-kill-switch;
     cp -n /var/jenkins_config/config.xml /var/jenkins_home;
+    cp -n /var/jenkins_config/jenkins.CLI.xml /var/jenkins_home;
 {{- if .Values.Master.InstallPlugins }}
+    # Install missing plugins
     cp /var/jenkins_config/plugins.txt /var/jenkins_home;
     rm -rf /usr/share/jenkins/ref/plugins/*.lock
     /usr/local/bin/install-plugins.sh `echo $(cat /var/jenkins_home/plugins.txt)`;
+    # Copy plugins to shared volume
+    cp -n /usr/share/jenkins/ref/plugins/* /var/jenkins_plugins;
 {{- end }}
 {{- if .Values.Master.ScriptApproval }}
     cp -n /var/jenkins_config/scriptapproval.xml /var/jenkins_home/scriptApproval.xml;
