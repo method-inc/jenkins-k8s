@@ -11,6 +11,7 @@ nameOverride: jenkins
 
 jenkins:
   Master:
+    # Skookum customizations:
     GithubAuth:
     # Delegate authentication to Github
       Enabled: false
@@ -20,19 +21,48 @@ jenkins:
       #   - skookum
       # AdminUsers:
       #   - jlegrone
-    UseSecurity: true
+    
+    # Upstream stable/jenkins chart values:
     Name: jenkins-master
-    Image: "jenkins/jenkins"
-    ImageTag: "lts"
-    ImagePullPolicy: "Always"
-    # ImagePullSecret: jenkins
-    Component: "jenkins-master"
-    Cpu: "200m"
-    Memory: "256Mi"
+    Image: quay.io/skookum/jenkins
+    ImageTag: stable
+    ImagePullPolicy: Always
+  # ImagePullSecret: jenkins
+    Component: jenkins-master
+    UseSecurity: true
+    AdminUser: admin
+    # AdminPassword: <defaults to random>
+    resources:
+      requests:
+        cpu: "50m"
+        memory: "256Mi"
+      limits:
+        cpu: "2000m"
+        memory: "2048Mi"
+    HostName: &host jenkins.k8s.skookum.com
+    Ingress:
+      ApiVersion: extensions/v1beta1
+      Annotations:
+        kubernetes.io/ingress.class: nginx
+        kubernetes.io/tls-acme: "true"
+        nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+      TLS:
+        - secretName: *host
+          hosts:
+            - *host
+    # Environment variables that get added to the init container (useful for e.g. http_proxy)
+    # InitContainerEnv:
+    #   - name: http_proxy
+    #     value: "http://192.168.64.1:3128"
+    # ContainerEnv:
+    #   - name: http_proxy
+    #     value: "http://192.168.64.1:3128"
     # Set min/max heap here if needed with:
     # JavaOpts: "-Xms512m -Xmx512m"
     # JenkinsOpts: ""
     # JenkinsUriPrefix: "/jenkins"
+    # Enable pod security context (must be `true` if RunAsUser or FsGroup are set)
+    UsePodSecurityContext: true
     # Set RunAsUser to 1000 to let Jenkins run as non-root user 'jenkins' which exists in 'jenkins/jenkins' docker image.
     # When setting RunAsUser to a different value than 0 also set FsGroup to the same value:
     # RunAsUser: <defaults to 0>
@@ -40,18 +70,30 @@ jenkins:
     ServicePort: 8080
     # For minikube, set this to NodePort, elsewhere use LoadBalancer
     # Use ClusterIP if your setup includes ingress controller
-    ServiceType: LoadBalancer
+    ServiceType: ClusterIP
     # Master Service annotations
     ServiceAnnotations: {}
-    #   service.beta.kubernetes.io/aws-load-balancer-backend-protocol: https
-    # Used to create Ingress record (should used with ServiceType: ClusterIP)
-    # HostName: jenkins.cluster.local
-    # NodePort: <to set explicitly, choose port between 30000-32767
     ContainerPort: 8080
     # Enable Kubernetes Liveness and Readiness Probes
+    # ~ 2 minutes to allow Jenkins to restart when upgrading plugins. Set ReadinessTimeout to be shorter than LivenessTimeout.
     HealthProbes: true
-    HealthProbesTimeout: 60
+    HealthProbesLivenessTimeout: 90
+    HealthProbesReadinessTimeout: 60
+    HealthProbeLivenessFailureThreshold: 12
     SlaveListenerPort: 50000
+    DisabledAgentProtocols:
+      - JNLP-connect
+      - JNLP2-connect
+      - JNLP3-connect
+    CSRF:
+      DefaultCrumbIssuer:
+        Enabled: true
+        ProxyCompatability: true
+    CLI: false
+    # Kubernetes service type for the JNLP slave service
+    # SETTING THIS TO "LoadBalancer" IS A HUGE SECURITY RISK: https://github.com/kubernetes/charts/issues/1341
+    SlaveListenerServiceType: ClusterIP
+    SlaveListenerServiceAnnotations: {}
     LoadBalancerSourceRanges:
     - 0.0.0.0/0
     # Optionally assign a known public LB IP
@@ -64,14 +106,8 @@ jenkins:
     #   -Dcom.sun.management.jmxremote.ssl=false
     # JMXPort: 4000
     # List of plugins to be install during Jenkins master start
-    InstallPlugins:
-      - kubernetes:1.2.1
-      - workflow-aggregator:2.5
-      - workflow-job:2.17
-      - credentials-binding:1.15
-      - git:3.8.0
-      - blueocean:1.4.2
-      - github-oauth:0.29
+    InstallPlugins: []
+    # - github-oauth:0.29
     # Used to approve a list of groovy functions in pipelines used the script-security plugin. Can be viewed under /scriptApproval
     # ScriptApproval:
     #   - "method groovy.json.JsonSlurperClassic parseText java.lang.String"
@@ -122,27 +158,24 @@ jenkins:
     # ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#taints-and-tolerations-beta-feature
     NodeSelector: {}
     Tolerations: {}
-
-    Ingress:
-      Annotations:
-      # kubernetes.io/ingress.class: nginx
-      # kubernetes.io/tls-acme: "true"
-
-      TLS:
-      # - secretName: jenkins.cluster.local
-      #   hosts:
-      #     - jenkins.cluster.local
+    PodAnnotations: {}
 
   Agent:
     Enabled: true
     Image: jenkins/jnlp-slave
     ImageTag: 3.10-1
-    AgentLabel: 'default-agent'
+    Label: default
+
   # ImagePullSecret: jenkins
     Component: "jenkins-slave"
     Privileged: false
-    Cpu: "200m"
-    Memory: "256Mi"
+    resources:
+      requests:
+        cpu: "200m"
+        memory: "256Mi"
+      limits:
+        cpu: "200m"
+        memory: "256Mi"
     # You may want to change this to true while testing a new image
     AlwaysPullImage: false
     # You can define the volumes that you want to mount for this container
@@ -186,10 +219,10 @@ jenkins:
 
   NetworkPolicy:
     # Enable creation of NetworkPolicy resources.
-    Enabled: false
+    Enabled: true
     # For Kubernetes v1.4, v1.5 and v1.6, use 'extensions/v1beta1'
     # For Kubernetes v1.7, use 'networking.k8s.io/v1'
-    ApiVersion: extensions/v1beta1
+    ApiVersion: networking.k8s.io/v1
 
   ## Install Default RBAC roles and bindings
   rbac:
