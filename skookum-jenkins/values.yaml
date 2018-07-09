@@ -24,11 +24,11 @@ jenkins:
     
     # Upstream stable/jenkins chart values:
     Name: jenkins-master
-    Image: "quay.io/skookum/jenkins"
-    ImageTag: "stable"
-    ImagePullPolicy: "Always"
+    Image: quay.io/skookum/jenkins
+    ImageTag: stable
+    ImagePullPolicy: Always
   # ImagePullSecret: jenkins
-    Component: "jenkins-master"
+    Component: jenkins-master
     UseSecurity: true
     AdminUser: admin
     # AdminPassword: <defaults to random>
@@ -39,6 +39,17 @@ jenkins:
       limits:
         cpu: "2000m"
         memory: "2048Mi"
+    HostName: &host jenkins.k8s.skookum.com
+    Ingress:
+      ApiVersion: extensions/v1beta1
+      Annotations:
+        kubernetes.io/ingress.class: nginx
+        kubernetes.io/tls-acme: "true"
+        nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+      TLS:
+        - secretName: *host
+          hosts:
+            - *host
     # Environment variables that get added to the init container (useful for e.g. http_proxy)
     # InitContainerEnv:
     #   - name: http_proxy
@@ -59,13 +70,9 @@ jenkins:
     ServicePort: 8080
     # For minikube, set this to NodePort, elsewhere use LoadBalancer
     # Use ClusterIP if your setup includes ingress controller
-    ServiceType: LoadBalancer
+    ServiceType: ClusterIP
     # Master Service annotations
     ServiceAnnotations: {}
-    #   service.beta.kubernetes.io/aws-load-balancer-backend-protocol: https
-    # Used to create Ingress record (should used with ServiceType: ClusterIP)
-    # HostName: jenkins.cluster.local
-    # NodePort: <to set explicitly, choose port between 30000-32767
     ContainerPort: 8080
     # Enable Kubernetes Liveness and Readiness Probes
     # ~ 2 minutes to allow Jenkins to restart when upgrading plugins. Set ReadinessTimeout to be shorter than LivenessTimeout.
@@ -77,6 +84,7 @@ jenkins:
     DisabledAgentProtocols:
       - JNLP-connect
       - JNLP2-connect
+      - JNLP3-connect
     CSRF:
       DefaultCrumbIssuer:
         Enabled: true
@@ -98,8 +106,8 @@ jenkins:
     #   -Dcom.sun.management.jmxremote.ssl=false
     # JMXPort: 4000
     # List of plugins to be install during Jenkins master start
-    InstallPlugins:
-    - github-oauth:0.29
+    InstallPlugins: []
+    # - github-oauth:0.29
     # Used to approve a list of groovy functions in pipelines used the script-security plugin. Can be viewed under /scriptApproval
     # ScriptApproval:
     #   - "method groovy.json.JsonSlurperClassic parseText java.lang.String"
@@ -152,22 +160,11 @@ jenkins:
     Tolerations: {}
     PodAnnotations: {}
 
-    Ingress:
-      ApiVersion: extensions/v1beta1
-      Annotations:
-      # kubernetes.io/ingress.class: nginx
-      # kubernetes.io/tls-acme: "true"
-
-      TLS:
-      # - secretName: jenkins.cluster.local
-      #   hosts:
-      #     - jenkins.cluster.local
-
   Agent:
     Enabled: true
     Image: jenkins/jnlp-slave
     ImageTag: 3.10-1
-    Label: 'default'
+    Label: default
 
   # ImagePullSecret: jenkins
     Component: "jenkins-slave"
@@ -222,10 +219,10 @@ jenkins:
 
   NetworkPolicy:
     # Enable creation of NetworkPolicy resources.
-    Enabled: false
+    Enabled: true
     # For Kubernetes v1.4, v1.5 and v1.6, use 'extensions/v1beta1'
     # For Kubernetes v1.7, use 'networking.k8s.io/v1'
-    ApiVersion: extensions/v1beta1
+    ApiVersion: networking.k8s.io/v1
 
   ## Install Default RBAC roles and bindings
   rbac:

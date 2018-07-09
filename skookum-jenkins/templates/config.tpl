@@ -66,7 +66,7 @@ data:
               <name>jenkins-agent-default</name>
               <instanceCap>2147483647</instanceCap>
               <idleMinutes>0</idleMinutes>
-              <label>{{ default "default" .Values.Agent.AgentLabel }}</label>
+              <label>{{ default "default" .Values.Agent.Label }}</label>
               <nodeSelector>
                 {{- $local := dict "first" true }}
                 {{- range $key, $value := .Values.Agent.NodeSelector }}
@@ -98,9 +98,6 @@ data:
                   <command></command>
                   <args>${computer.jnlpmac} ${computer.name}</args>
                   <ttyEnabled>false</ttyEnabled>
-                  # Resources configuration is a little hacky. This was to prevent breaking
-                  # changes, and should be cleanned up in the future once everybody had
-                  # enough time to migrate.
                   <resourceRequestCpu>{{.Values.Agent.Cpu | default .Values.Agent.resources.requests.cpu}}</resourceRequestCpu>
                   <resourceRequestMemory>{{.Values.Agent.Memory | default .Values.Agent.resources.requests.memory}}</resourceRequestMemory>
                   <resourceLimitCpu>{{.Values.Agent.Cpu | default .Values.Agent.resources.limits.cpu}}</resourceLimitCpu>

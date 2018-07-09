@@ -1,0 +1,19 @@
+# Example usage:
+# export GITHUB_AUTH_CLIENT_ID=foo
+# export GITHUB_AUTH_CLIENT_SECRET=bar
+# helm upgrade --install jenkins \
+#   ./skookum-jenkins \
+#   --values ./overrides-github-auth.yaml \
+#   --set jenkins.Master.GithubAuth.ClientID=$GITHUB_AUTH_CLIENT_ID \
+#   --set jenkins.Master.GithubAuth.ClientSecret=$GITHUB_AUTH_CLIENT_SECRET
+
+jenkins:
+  Master:
+    GithubAuth:
+      Enabled: true
+      Organizations:
+        - Skookum
+      AdminUsers:
+        - jlegrone
+      # ClientID: <secret-text>
+      # ClientSecret: <secret-text>

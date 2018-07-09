@@ -7,8 +7,5 @@ jenkins:
     # Disable security (less hassle for local development)
     UseSecurity: false
 
-  Agent:
-    Enabled: false
-
   Persistence:
     Enabled: false
